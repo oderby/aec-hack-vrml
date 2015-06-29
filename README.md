@@ -30,7 +30,7 @@ Technical details
 -----------------
 The sample workflow below helps outlines how this process occurs.
 
-!!(assets/system_diagram.png)
+![https://github.com/oderby/aec-hack-vrml/raw/master/assets/system_diagram.png](./assets/system_diagram.png)
 
 The process starts with the designer, producing the model on their laptop in
 Revit. When they're ready to get client feedback, they can export their model to
@@ -57,10 +57,10 @@ still very new and the WebVR is an evolving web API standard (still in draft
 mode). To make the browser rendering work using ThreeJS, we hobbled together
 resources from the following locations:
 
-ThreeJS dev branch - base three.[min.]js file, plus OBJLoader, VREffects and VRControls.
-VRPolyfill - Helpful polyfill for browsers and supporting cardboard on other
+* ThreeJS dev branch - base three.[min.]js file, plus OBJLoader, VREffects and VRControls.
+* VRPolyfill - Helpful polyfill for browsers and supporting cardboard on other
 browsers [here](https://github.com/borismus/webvr-polyfill)
-VRManager - Handy [utility](https://github.com/borismus/webvr-boilerplate) utility for
+* VRManager - Handy [utility](https://github.com/borismus/webvr-boilerplate) utility for
 managing the vr experience
 
 The browser VR experience is tested on the Rift DK2 and Google cardboard. We
@@ -68,11 +68,12 @@ used Dropbox to synchronize the model between the designer's machine and the
 server, which was running a simple http static file server.
 
 To run the code:
-1 download the repository
-2 replace the broken symlink for assets/model.obj with the actual model file
+
+1. download the repository
+2. replace the broken symlink for assets/model.obj with the actual model file
 you want to serve (or a symlink to it) (Currently this code can only serve an
 .obj file, but small tweaks could make it serve any format ThreeJS supports)
-3 Run a server in the same repository (we used `python -m SimpleHTTPServer`)
-4 Navigate to http://localhost:8000/ in a browser (you'll need a browser that
+3. Run a server in the same repository (we used `python -m SimpleHTTPServer`)
+4. Navigate to http://localhost:8000/ in a browser (you'll need a browser that
 supports webVR if you want to use the VR capabilities. We used the custom
 [chrome nightly branch with support for WebVR] (https://drive.google.com/folderview?id=0BzudLt22BqGRbW9WTHMtOWMzNjQ).
