@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - loaders - OBJ loader</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #000;
+				color: #fff;
+				margin: 0px;
+				overflow: hidden;
+			}
+			#info {
+				color: #fff;
+				position: absolute;
+				top: 10px;
+				width: 100%;
+				text-align: center;
+				z-index: 100;
+				display:block;
+			}
+			#info a, .button { color: #f00; font-weight: bold; text-decoration: underline; cursor: pointer }
+		</style>
+	</head>
+
+	<body>
+		<div id="info">
+		<a href="http://threejs.org" target="_blank">three.js</a> - OBJLoader test
+		</div>
+
+		<script src="js/three.js"></script>
+		<script src="js/OBJLoader.js"></script>
+
+        <!--
+    VRControls.js acquires positional information from connected VR devices and applies the transformations to a three.js camera object.
+     -->
+        <script src="js/VRControls.js"></script>
+        <!--
+    VREffect.js handles stereo camera setup and rendering.
+    -->
+        <script src="js/VREffect.js"></script>
+        <!--
+    A polyfill for WebVR using the Device{Motion,Orientation}Event API.
+    -->
+        <script src="js/webvr-polyfill.js"></script>
+
+        <!--
+    Helps enter and exit VR mode, provides best practices while in VR.
+    -->
+        <script src="js/webvr-manager.js"></script>
+
+		<script>
+
+			var container;
+
+			var camera, scene, renderer;
+			var controls, effect, manager;
+			var mouseX = 0, mouseY = 0;
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+			var clock = new THREE.Clock();
+
+			init();
+			animate();
+
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
+				camera.position.z = -100;
+
+				// scene
+
+                scene = new THREE.Scene();
+
+                var lighting = new THREE.Object3D();
+                scene.add(lighting);
+
+                var root = new THREE.Object3D();
+                scene.add(root);
+
+                var keyLight = new THREE.DirectionalLight();
+                keyLight.position.set(60, 80, 50);
+                keyLight.intensity = 0.95;
+                lighting.add(keyLight);
+
+                var backLight = new THREE.DirectionalLight();
+                backLight.position.set(-250, 50, -200);
+                backLight.intensity = 0.4;
+                lighting.add(backLight);
+
+                var fillLight = new THREE.DirectionalLight();
+                fillLight.position.set(-500, -500, 0);
+                fillLight.intensity = 0.7;
+                lighting.add(fillLight);
+
+                var edgesScene = new THREE.Scene();
+                var edgesRoot = new THREE.Object3D();
+                edgesScene.add(edgesRoot);
+
+				// texture
+
+				var loadManager = new THREE.LoadingManager();
+				loadManager.onProgress = function ( item, loaded, total ) {
+
+					console.log( item, loaded, total );
+
+				};
+
+				var texture = new THREE.Texture();
+
+				var onProgress = function ( xhr ) {
+					if ( xhr.lengthComputable ) {
+						var percentComplete = xhr.loaded / xhr.total * 100;
+						console.log( Math.round(percentComplete, 2) + '% downloaded' );
+					}
+				};
+
+				var onError = function (xhr) {
+				    console.log("error", arguments);
+				};
+
+
+				var loader = new THREE.ImageLoader( loadManager );
+				loader.load( 'assets/UV_Grid_Sm.jpg', function ( image ) {
+
+					texture.image = image;
+					texture.needsUpdate = true;
+
+				} );
+
+				// model
+				var loader = new THREE.OBJLoader( loadManager );
+				loader.load('assets/model.obj', function (object) {
+					object.traverse( function ( child ) {
+						if ( child instanceof THREE.Mesh ) {
+							child.material.map = texture;
+						}
+					});
+					object.position.y = -100;
+					scene.add(object);
+				}, onProgress, onError );
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize(window.innerWidth, window.innerHeight);
+
+
+			    // Apply VR headset positional data to camera.
+				controls = configControls_three(camera);
+
+			    // Apply VR stereo rendering to renderer.
+				effect = configEffect_three(renderer);
+
+			    // Create a VR manager helper to enter and exit VR mode.
+				manager = new WebVRManager(renderer, effect, { hideButton: false });
+				manager.button.on("click", function () {
+				    console.log("Change modes");
+				});
+
+				container.appendChild( renderer.domElement );
+
+				window.addEventListener('keydown', onKey, true);
+
+				var resize = resize_three;
+				window.addEventListener('resize', resize, false);
+				setTimeout(resize, 1);
+
+			}
+
+			function configControls_three(camera) {
+			    return new THREE.VRControls(camera);
+			}
+
+			function configEffect_three(renderer) {
+			    var effect = new THREE.VREffect(renderer);
+			    effect.setSize(window.innerWidth, window.innerHeight);
+			    return effect;
+			}
+
+			function resize_three() {
+
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+				render_card();
+
+			}
+
+			function render_card() {
+			    var dt = clock.getDelta();
+			    resize();
+
+			    camera.updateProjectionMatrix();
+
+			    controls.update(dt);
+                // render
+//			    effect.render(scene, camera);
+			    manager.render( scene, camera );
+			}
+
+			function resize() {
+			    var width = container.offsetWidth;
+			    var height = container.offsetHeight;
+
+			    camera.aspect = width / height;
+			    camera.updateProjectionMatrix();
+
+			    renderer.setSize(width, height, false);
+			}
+
+			// Reset the position sensor when 'z' pressed.
+			function onKey(event) {
+			    if (event.keyCode == 90) { // z
+                                controls.resetSensor();
+			    }
+			};
+
+		</script>
+
+	</body>
+</html>
